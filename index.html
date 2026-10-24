@@ -7,17 +7,39 @@
 <header class="top"><div class="logo">WX</div><div class="brand"><h1>WICKETX 🏏</h1><small>★ CRICKET LIVE ★</small></div></header>
 <main><div class="heading"><h2>🏏 LIVE MATCH</h2><span class="live">● MATCH</span></div>
 <section class="panel"><div class="screen" id="screen"><div class="empty"><div class="ball">▶</div><b>MATCH PLAYER</b><p>Press play to start the live match</p></div></div>
-<div class="bar"><strong>📺 MATCH STREAM</strong><div><button class="btn" id="play">▶ PLAY</button> <button class="btn" id="sound">🔊 SOUND ON</button> <button class="btn" id="full">⛶ FULL SCREEN</button></div></div></section>
+<div class="bar"><strong>📺 MATCH STREAM</strong><div><button class="btn" id="play">▶ PLAY</button> <button class="btn" id="full">⛶ FULL SCREEN</button></div></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><input id="streamUrl" type="url" inputmode="url" placeholder="Paste authorised player/embed URL" aria-label="Authorised player URL" style="flex:1;min-width:190px;border:2px solid #241b19;border-radius:14px;padding:12px;font:700 12px Nunito"><button class="btn" id="connect">CONNECT</button></div>
+<p id="status" role="status" style="font-size:11px;margin:8px 3px 0;color:#776a5c">Use an authorised player/embed page. DRM keys and protected stream URLs are not supported.</p></section>
 <p class="hint">Playback with sound depends on your browser's autoplay permission. If sound autoplay is blocked, tap the player once. Use only a stream you own or are authorised to show.</p>
 <div class="foot">MADE FOR CRICKET FANS • WICKETX</div></main>
 <script>
-// Set this to an authorised, non-DRM player page URL. Do not put private keys or DRM credentials in client-side code.
-const AUTHORISED_PLAYER_URL = "";
 const screen=document.getElementById('screen');
-function loadPlayer(){if(!AUTHORISED_PLAYER_URL){screen.innerHTML='<div class="empty"><div class="ball">▶</div><b>STREAM NOT CONNECTED</b><p>Add an authorised, playable stream URL to enable playback. This page cannot unlock encrypted/DRM broadcasts.</p></div>';return}const frame=document.createElement('iframe');frame.src=AUTHORISED_PLAYER_URL;frame.allow='autoplay; fullscreen; picture-in-picture';frame.allowFullscreen=true;frame.title='Live match player';screen.replaceChildren(frame)}
+const urlInput=document.getElementById('streamUrl');
+const status=document.getElementById('status');
+function loadPlayer(){
+ const value=urlInput.value.trim();
+ if(!value){status.textContent='Paste an authorised player/embed URL first.';return}
+ let parsed;
+ try{parsed=new URL(value)}catch(e){status.textContent='That URL does not look valid.';return}
+ if(parsed.protocol!=='https:'){status.textContent='For safety, use an HTTPS player URL.';return}
+ if(/\\.mpd(?:$|\\?)|keyid=|(?:^|[?&])key=/i.test(value)){status.textContent='Encrypted DASH manifests or DRM keys cannot be loaded here. Use the broadcaster’s official authorised embed player.';return}
+ const frame=document.createElement('iframe');
+ frame.src=parsed.href;
+ frame.allow='autoplay; fullscreen; picture-in-picture';
+ frame.allowFullscreen=true;
+ frame.title='Live match player';
+ screen.replaceChildren(frame);
+ status.textContent='Player connected. If playback is blocked, check that embedding is allowed by the provider.';
+}
 document.getElementById('play').addEventListener('click',loadPlayer);
-document.getElementById('sound').addEventListener('click',()=>{const frame=screen.querySelector('iframe');if(frame){frame.contentWindow.postMessage({type:'unmute'},'*')}else loadPlayer()});
-document.getElementById('full').addEventListener('click',async()=>{try{if(document.fullscreenElement){await document.exitFullscreen();return}if(screen.requestFullscreen)await screen.requestFullscreen();else if(screen.webkitRequestFullscreen)screen.webkitRequestFullscreen();if(screen.orientation&&screen.orientation.lock){try{await screen.orientation.lock('landscape')}catch(e){}}}catch(e){/* Fullscreen/orientation may be restricted by the browser. */}});
+document.getElementById('connect').addEventListener('click',loadPlayer);
+document.getElementById('full').addEventListener('click',async()=>{
+ try{
+  if(document.fullscreenElement){await document.exitFullscreen();return}
+  if(screen.requestFullscreen)await screen.requestFullscreen();
+  else if(screen.webkitRequestFullscreen)screen.webkitRequestFullscreen();
+  if(screen.orientation&&screen.orientation.lock){try{await screen.orientation.lock('landscape')}catch(e){}}
+ }catch(e){status.textContent='Fullscreen is not available in this browser.'}
+});
 document.addEventListener('fullscreenchange',()=>{document.getElementById('full').textContent=document.fullscreenElement?'✕ EXIT FULL SCREEN':'⛶ FULL SCREEN'});
-if(AUTHORISED_PLAYER_URL)loadPlayer();
 </script></body></html>
